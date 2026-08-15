@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ACESSO — Studio</title>
+<style>
+:root{
+    --verde:#00ff9c; --verde-esc:#0a3d2e; --azul:#3E9BFF;
+    --bg:#04070a; --txt:#c8ffe6; --err:#ff4d6d;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);
+    font-family:"SF Mono",Menlo,Consolas,"Courier New",monospace;overflow:hidden}
+
+/* ---------- chuva de código (matrix) no fundo ---------- */
+#matrix{position:fixed;inset:0;z-index:0;opacity:.5}
+
+/* ---------- brilho/vinheta ---------- */
+.glow{position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(60% 55% at 50% 45%, rgba(0,255,156,.10), transparent 70%),
+               radial-gradient(circle at 50% 50%, transparent 55%, rgba(0,0,0,.85) 100%)}
+/* linhas de varredura CRT */
+.scan{position:fixed;inset:0;z-index:2;pointer-events:none;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,.18) 3px, rgba(0,0,0,0) 4px);
+    mix-blend-mode:multiply}
+
+/* ---------- terminal central ---------- */
+.wrap{position:relative;z-index:3;height:100%;display:flex;align-items:center;justify-content:center;padding:20px}
+.term{
+    width:100%;max-width:440px;
+    background:rgba(6,12,10,.82);
+    border:1px solid rgba(0,255,156,.35);
+    border-radius:10px;
+    box-shadow:0 0 0 1px rgba(0,255,156,.08), 0 0 40px rgba(0,255,156,.14), inset 0 0 40px rgba(0,255,156,.04);
+    backdrop-filter:blur(3px);
+    overflow:hidden;
+}
+.barra{display:flex;align-items:center;gap:8px;padding:9px 12px;
+    background:rgba(0,255,156,.06);border-bottom:1px solid rgba(0,255,156,.22)}
+.barra .b{width:11px;height:11px;border-radius:50%;background:#173}
+.barra .b.r{background:#ff5f56}.barra .b.y{background:#ffbd2e}.barra .b.g{background:#27c93f}
+.barra .tt{margin-left:6px;font-size:11px;letter-spacing:2px;color:rgba(0,255,156,.6);text-transform:uppercase}
+
+.corpo{padding:22px 22px 24px}
+.linhas{font-size:12.5px;line-height:1.75;min-height:118px;color:rgba(0,255,156,.75);white-space:pre-wrap}
+.linhas .ok{color:var(--verde)}
+.linhas .dim{color:rgba(0,255,156,.4)}
+.cursor{display:inline-block;width:8px;height:15px;background:var(--verde);
+    vertical-align:-2px;margin-left:2px;animation:blink 1s steps(1) infinite;box-shadow:0 0 8px var(--verde)}
+@keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
+
+.logo{font-size:26px;font-weight:800;letter-spacing:3px;margin:2px 0 2px;
+    color:var(--verde);text-shadow:0 0 12px rgba(0,255,156,.6);
+    font-family:inherit;position:relative}
+.logo::after{content:"_STUDIO";color:rgba(0,255,156,.35)}
+.sub{font-size:11px;letter-spacing:3px;color:rgba(0,255,156,.45);text-transform:uppercase;margin-bottom:18px}
+
+/* ---------- glitch no título ---------- */
+.glitch{position:relative}
+.glitch::before,.glitch::after{content:attr(data-t);position:absolute;left:0;top:0;width:100%;overflow:hidden}
+.glitch::before{color:#ff4d6d;transform:translate(-2px,0);clip-path:inset(0 0 55% 0);animation:gl1 2.6s infinite linear alternate}
+.glitch::after{color:var(--azul);transform:translate(2px,0);clip-path:inset(55% 0 0 0);animation:gl2 3.1s infinite linear alternate}
+@keyframes gl1{0%,92%,100%{opacity:0;transform:translate(0,0)}93%{opacity:.9;transform:translate(-3px,-1px)}96%{transform:translate(2px,1px)}}
+@keyframes gl2{0%,90%,100%{opacity:0;transform:translate(0,0)}91%{opacity:.9;transform:translate(3px,1px)}97%{transform:translate(-2px,-1px)}}
+
+.campo{margin-bottom:14px}
+.campo label{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;
+    color:rgba(0,255,156,.55);margin-bottom:6px}
+.inp{display:flex;align-items:center;gap:8px;
+    background:rgba(0,0,0,.45);border:1px solid rgba(0,255,156,.28);border-radius:6px;padding:0 10px}
+.inp:focus-within{border-color:var(--verde);box-shadow:0 0 0 1px rgba(0,255,156,.4),0 0 14px rgba(0,255,156,.18)}
+.inp .p{color:var(--verde);font-weight:700}
+.inp input{flex:1;background:transparent;border:0;outline:none;color:var(--txt);
+    font-family:inherit;font-size:14px;padding:11px 0;letter-spacing:1px}
+.inp input::placeholder{color:rgba(0,255,156,.28)}
+
+.btn{width:100%;margin-top:6px;padding:12px;cursor:pointer;
+    background:transparent;color:var(--verde);
+    border:1px solid var(--verde);border-radius:6px;
+    font-family:inherit;font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+    transition:.15s;position:relative;overflow:hidden}
+.btn:hover{background:var(--verde);color:#04120b;box-shadow:0 0 22px rgba(0,255,156,.5)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn::before{content:"> "}
+
+.erro{color:var(--err);font-size:12px;min-height:17px;margin-top:12px;letter-spacing:1px;text-shadow:0 0 8px rgba(255,77,109,.5)}
+.rodape{margin-top:16px;font-size:10px;letter-spacing:1px;color:rgba(0,255,156,.28);text-align:center}
+</style>
+</head>
+<body>
+<canvas id="matrix"></canvas>
+<div class="glow"></div>
+<div class="scan"></div>
+
+<div class="wrap">
+  <div class="term">
+    <div class="barra">
+        <span class="b r"></span><span class="b y"></span><span class="b g"></span>
+        <span class="tt">secure shell · acesso restrito</span>
+    </div>
+    <div class="corpo">
+        <div class="linhas" id="linhas"></div>
+
+        <div id="formArea" style="display:none">
+            <div class="logo glitch" data-t="FOSTER">FOSTER</div>
+            <div class="sub">painel de telas</div>
+
+            <form id="form" autocomplete="off">
+                <div class="campo">
+                    <label>Usuário</label>
+                    <div class="inp"><span class="p">$</span><input type="text" id="usuario" autocomplete="username" spellcheck="false"></div>
+                </div>
+                <div class="campo">
+                    <label>Senha</label>
+                    <div class="inp"><span class="p">#</span><input type="password" id="senha" autocomplete="current-password"></div>
+                </div>
+                <button class="btn" id="bt" type="submit">autenticar</button>
+                <div class="erro" id="erro"></div>
+            </form>
+            <div class="rodape">— acesso monitorado · uso interno —</div>
+        </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== chuva de código estilo matrix ===== */
+(function () {
+    var cv = document.getElementById('matrix'), ctx = cv.getContext('2d');
+    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&*<>[]{}/\\=+アカサタナ01'.split('');
+    var col, gotas, tam = 14;
+    function resize() {
+        cv.width = window.innerWidth; cv.height = window.innerHeight;
+        col = Math.floor(cv.width / tam);
+        gotas = []; for (var i = 0; i < col; i++) gotas[i] = Math.random() * -100;
+    }
+    resize(); window.addEventListener('resize', resize);
+    function draw() {
+        ctx.fillStyle = 'rgba(4,7,10,0.08)';
+        ctx.fillRect(0, 0, cv.width, cv.height);
+        ctx.font = tam + 'px monospace';
+        for (var i = 0; i < gotas.length; i++) {
+            var c = chars[Math.floor(Math.random() * chars.length)];
+            var x = i * tam, y = gotas[i] * tam;
+            ctx.fillStyle = Math.random() > 0.975 ? '#c8ffe6' : 'rgba(0,255,156,0.55)';
+            ctx.fillText(c, x, y);
+            if (y > cv.height && Math.random() > 0.975) gotas[i] = 0;
+            gotas[i]++;
+        }
+    }
+    setInterval(draw, 55);
+})();
+
+/* ===== boot fake do terminal, depois mostra o form ===== */
+(function () {
+    var linhas = document.getElementById('linhas');
+    var passos = [
+        { t: 'root@renova:~$ ', d: 260, cls: 'dim' },
+        { t: 'init secure-shell --studio\n', d: 420 },
+        { t: 'verificando integridade................ ', d: 500 },
+        { t: 'OK\n', d: 120, cls: 'ok' },
+        { t: 'estabelecendo túnel criptografado...... ', d: 620 },
+        { t: 'OK\n', d: 120, cls: 'ok' },
+        { t: 'aguardando credenciais_\n', d: 360, cls: 'ok' }
+    ];
+    var i = 0, buf = '';
+    function proximo() {
+        if (i >= passos.length) {
+            document.getElementById('formArea').style.display = 'block';
+            document.getElementById('usuario').focus();
+            linhas.querySelector('.cursor') && linhas.querySelector('.cursor').remove();
+            return;
+        }
+        var p = passos[i++];
+        var span = p.cls ? '<span class="' + p.cls + '">' + p.t + '</span>' : p.t;
+        buf += span;
+        linhas.innerHTML = buf + '<span class="cursor"></span>';
+        setTimeout(proximo, p.d);
+    }
+    proximo();
+})();
+
+/* ===== login ===== */
+document.getElementById('form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var bt = document.getElementById('bt'), erro = document.getElementById('erro');
+    erro.textContent = '';
+    bt.disabled = true; bt.textContent = 'autenticando...';
+    fetch('/api/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            usuario: document.getElementById('usuario').value,
+            senha: document.getElementById('senha').value
+        })
+    }).then(function (r) {
+        if (r.ok) { bt.textContent = 'acesso concedido'; setTimeout(function () { window.location.href = '/'; }, 300); return; }
+        return r.json().then(function (j) {
+            bt.disabled = false; bt.textContent = 'autenticar';
+            erro.textContent = j.erro === 'muitas_tentativas'
+                ? '! acesso bloqueado — aguarde 5 min'
+                : '! acesso negado — credenciais inválidas';
+        });
+    }).catch(function () {
+        bt.disabled = false; bt.textContent = 'autenticar';
+        erro.textContent = '! falha de conexão';
+    });
+});
+</script>
+</body>
+</html>
