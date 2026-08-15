@@ -760,6 +760,7 @@ function novoElemento(tipo) {
         android: {
             cor: '#e7eaf2', corOlhos: '#0b0d12',
             refresh: true, corRefresh: '#3E9BFF', veloc: 1.4,
+            girarRefresh: true, tamRefresh: 34,
             w: 130, h: 150, x: 130, y: 290
         }
     }[tipo] || {};
@@ -1010,12 +1011,14 @@ function montarAndroid(el) {
 
     var refresh = '';
     if (el.refresh) {
-        refresh = '<div style="position:absolute;left:50%;top:57%;width:34%;height:34%;transform:translate(-50%,-50%);-webkit-transform:translate(-50%,-50%)">' +
-            '<div class="bx-gira" style="-webkit-animation-duration:' + el.veloc + 's;animation-duration:' + el.veloc + 's">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="' + el.corRefresh + '" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%">' +
+        var tam = (el.tamRefresh == null ? 34 : el.tamRefresh);
+        var svg = '<svg viewBox="0 0 24 24" fill="none" stroke="' + el.corRefresh + '" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="width:100%;height:100%">' +
             '<path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/>' +
-            '<path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/>' +
-            '</svg></div></div>';
+            '<path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>';
+        var giro = el.girarRefresh
+            ? '<div class="bx-gira" style="-webkit-animation-duration:' + el.veloc + 's;animation-duration:' + el.veloc + 's">' + svg + '</div>'
+            : svg;
+        refresh = '<div style="position:absolute;left:50%;top:57%;width:' + tam + '%;height:' + tam + '%;transform:translate(-50%,-50%);-webkit-transform:translate(-50%,-50%)">' + giro + '</div>';
     }
     return '<div style="position:relative;width:100%;height:100%">' + robo + refresh + '</div>';
 }
@@ -1603,10 +1606,12 @@ function renderProps() {
 
     if (el.tipo === 'android') {
         h += '<div class="linha2">' + cCor('Cor do boneco', 'cor', el.cor) + cCor('Olhos', 'corOlhos', el.corOlhos) + '</div>';
-        h += cCheck('Ícone de atualização girando', 'refresh', el.refresh);
+        h += cCheck('Mostrar seta de atualização', 'refresh', el.refresh);
         if (el.refresh) {
-            h += cCor('Cor do ícone', 'corRefresh', el.corRefresh);
-            h += cRange('Velocidade (seg por volta)', 'veloc', el.veloc, .4, 4, .1, 's');
+            h += cCor('Cor da seta', 'corRefresh', el.corRefresh);
+            h += cRange('Tamanho da seta', 'tamRefresh', (el.tamRefresh == null ? 34 : el.tamRefresh), 10, 80, 1, '%');
+            h += cCheck('Seta girando', 'girarRefresh', el.girarRefresh);
+            if (el.girarRefresh) h += cRange('Velocidade (seg por volta)', 'veloc', el.veloc, .4, 4, .1, 's');
         }
     }
 
@@ -1627,7 +1632,7 @@ function mudarProp(k, v, commit) {
     if (el.tipo === 'loading' || el.tipo === 'facial') el.h = el.w;
     renderPalco();
     renderCamadas();
-    if (k === 'usarGlobal' || k === 'mostrarPct' || k === 'gradiente' || k === 'formato' || k === 'modelo' || k === 'preencher' || k === 'usarOriginal' || k === 'refresh') renderProps();
+    if (k === 'usarGlobal' || k === 'mostrarPct' || k === 'gradiente' || k === 'formato' || k === 'modelo' || k === 'preencher' || k === 'usarOriginal' || k === 'refresh' || k === 'girarRefresh') renderProps();
 }
 
 $('props').addEventListener('input', function (e) {
