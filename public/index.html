@@ -146,6 +146,11 @@ button, input, select, textarea { font-family: inherit; font-size: 12px; color: 
 .camada .olho { opacity: .45; cursor: pointer; padding: 2px; }
 .camada .olho:hover { opacity: 1; }
 .camada.oculta .nome { opacity: .4; text-decoration: line-through; }
+.camada .pega { opacity: .35; cursor: grab; font-size: 12px; line-height: 1; letter-spacing: -2px; }
+.camada:hover .pega { opacity: .7; }
+.camada.arrastando-cam { opacity: .4; }
+.camada.alvo-cima { box-shadow: inset 0 2px 0 var(--azul); }
+.camada.alvo-baixo { box-shadow: inset 0 -2px 0 var(--azul); }
 .vazio { color: var(--txt2); font-size: 11.5px; text-align: center; padding: 14px 6px; line-height: 1.6; }
 
 /* campos */
@@ -374,7 +379,7 @@ input[type=color] {
 }
 
 /* galeria de modelos */
-.galeria { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.galeria { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; align-items: start; }
 .modelo {
     border: 1px solid var(--linha); border-radius: 11px;
     overflow: hidden; cursor: pointer; background: var(--painel2);
@@ -391,14 +396,29 @@ input[type=color] {
 }
 .apagar-nuvem:hover { border-color: var(--vermelho); color: var(--vermelho); }
 .modelo .mini {
-    height: 148px; background: #06080c;
+    height: 168px; background: #06080c;
     position: relative; overflow: hidden;
     display: flex; align-items: center; justify-content: center;
 }
-.modelo .mini > div { transform-origin: center; }
+.modelo .mini .bg { position: absolute; inset: 0; }
+.modelo .mini > div { transform-origin: center; position: relative; }
 .modelo .txt { padding: 9px 11px; }
 .modelo .txt b { display: block; font-size: 12px; }
 .modelo .txt span { font-size: 10.5px; color: var(--txt2); }
+.modelo .acoes {
+    display: flex; gap: 6px; padding: 0 9px 10px; align-items: center;
+}
+.modelo .acoes .btn { flex: 1 1 0; justify-content: center; height: 32px; min-height: 32px; }
+/* a página de modelos ocupa quase a tela toda */
+#modalModelos .modal { max-width: 1100px; width: 96%; }
+#modalModelos .galeria { grid-template-columns: repeat(4, 1fr); }
+@media (max-width: 900px) { #modalModelos .galeria { grid-template-columns: repeat(2, 1fr); } }
+.dono-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--verde); border: 1px solid rgba(34,221,136,.4);
+    border-radius: 100px; padding: 3px 9px; margin-left: 8px;
+}
 
 .aviso {
     background: rgba(255,196,77,.1);
@@ -548,12 +568,12 @@ input[type=color] {
 <div class="modal-fundo" id="modalModelos">
     <div class="modal">
         <header>
-            <h2>Modelos prontos</h2>
+            <h2>Modelos <span id="donoBadge" class="dono-badge" style="display:none">★ Modo dono</span></h2>
             <button class="fechar" data-fechar>×</button>
         </header>
         <div class="corpo">
-            <div class="aviso">Abrir um modelo substitui a tela atual. Salve seu projeto antes se precisar.</div>
-            <h3 style="font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--txt2);margin:2px 0 10px">☁ Modelos da equipe (nuvem)</h3>
+            <div class="aviso"><b>Duplicar</b> cria uma tela nova a partir do modelo pra você editar. <b>Copiar HTML</b> copia o código pronto daquele modelo direto pro seu app.</div>
+            <h3 style="font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--txt2);margin:2px 0 10px">☁ Modelos da equipe</h3>
             <div class="galeria" id="galeriaNuvem"></div>
             <div id="nuvemVazia" class="vazio" style="display:none">Nenhum modelo salvo na nuvem ainda. Monte uma tela e use “☁ Salvar na nuvem”.</div>
             <h3 style="font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--txt2);margin:22px 0 10px">Modelos prontos</h3>
@@ -562,9 +582,33 @@ input[type=color] {
     </div>
 </div>
 
+<div class="modal-fundo" id="modalImagens">
+    <div class="modal" style="max-width:820px;width:94%">
+        <header>
+            <h2>Biblioteca de imagens</h2>
+            <button class="fechar" data-fechar>×</button>
+        </header>
+        <div class="corpo">
+            <div class="aviso" id="avisoImg">Escolha uma imagem pra usar no elemento selecionado.</div>
+            <div id="donoAddImg" style="display:none;margin-bottom:14px">
+                <div class="linha2">
+                    <input type="text" id="imgUrl" placeholder="Cole a URL de uma imagem" style="width:100%;background:var(--bg);border:1px solid var(--linha);border-radius:7px;padding:8px 10px;color:var(--txt)">
+                    <div style="display:flex;gap:6px">
+                        <button class="btn" id="imgAddUrl" style="flex:1;justify-content:center">Salvar URL</button>
+                        <button class="btn pri" id="imgAddUpload" style="flex:1;justify-content:center">Enviar do PC</button>
+                    </div>
+                </div>
+            </div>
+            <div class="galeria" id="galeriaImagens" style="grid-template-columns:repeat(4,1fr)"></div>
+            <div id="imgVazia" class="vazio" style="display:none">Nenhuma imagem salva ainda.</div>
+        </div>
+    </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <input type="file" id="inputArquivo" accept=".json" style="display:none">
 <input type="file" id="inputImagem" accept="image/*" style="display:none">
+<input type="file" id="inputImgBib" accept="image/*" style="display:none">
 
 <script>
 /* =========================================================
@@ -596,7 +640,8 @@ var TIPOS = {
     loading:  { nome: 'Loading',  icone: '<path d="M12 3a9 9 0 1 0 9 9"/>' },
     forma:    { nome: 'Forma',    icone: '<rect x="3" y="3" width="18" height="18" rx="4"/>' },
     facial:   { nome: 'Facial',   icone: '<circle cx="12" cy="12" r="9"/><path d="M9 10.5h.01M15 10.5h.01M9 15c1.8 1.5 4.2 1.5 6 0"/>' },
-    selo:     { nome: 'Selo',     icone: '<rect x="2" y="8" width="20" height="8" rx="4"/><circle cx="7" cy="12" r="1.6" fill="currentColor"/>' }
+    selo:     { nome: 'Selo',     icone: '<rect x="2" y="8" width="20" height="8" rx="4"/><circle cx="7" cy="12" r="1.6" fill="currentColor"/>' },
+    digital:  { nome: 'Digital',  icone: '<path d="M12 3a7 7 0 0 1 7 7v2M5 12v-2a7 7 0 0 1 3.5-6M8.5 12v-1a3.5 3.5 0 0 1 7 0v3M12 12v3m0 4a9 9 0 0 0 3-4"/>' }
 };
 
 var LOADINGS = [
@@ -705,6 +750,11 @@ function novoElemento(tipo) {
             texto: 'Verificação em andamento', fonte: FONTES[0].v, tam: 10, peso: 700,
             cor: '#ffffff', corPonto: '#3E9BFF', corBorda: '#ffffff', opBorda: 22,
             ls: 2.2, maiusc: true, w: 240, h: 26
+        },
+        digital: {
+            cor1: '#8b94a8', cor2: '#3E9BFF', espessura: 4, pulsar: true,
+            preencher: true, usarGlobal: true, durSeg: 8,
+            w: 120, h: 140, x: 135, y: 300
         }
     }[tipo] || {};
 
@@ -751,6 +801,9 @@ var CSS_ELS = [
 '.bx-fcanto{position:absolute;width:30px;height:30px;-webkit-animation:bxrespirar 2.2s ease-in-out infinite;animation:bxrespirar 2.2s ease-in-out infinite}',
 '.bx-selo{width:100%;height:100%;display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:100px;border-style:solid}',
 '.bx-selo i{border-radius:50%;-webkit-animation:bxrespirar 1.6s ease-in-out infinite;animation:bxrespirar 1.6s ease-in-out infinite}',
+'.bx-dig{-webkit-animation:bxdig 1.8s ease-in-out infinite;animation:bxdig 1.8s ease-in-out infinite}',
+'@-webkit-keyframes bxdig{0%,100%{opacity:.85}50%{opacity:1}}',
+'@keyframes bxdig{0%,100%{opacity:.85}50%{opacity:1}}',
 '@-webkit-keyframes bxgirar{from{-webkit-transform:rotate(0)}to{-webkit-transform:rotate(360deg)}}',
 '@keyframes bxgirar{from{-webkit-transform:rotate(0);transform:rotate(0)}to{-webkit-transform:rotate(360deg);transform:rotate(360deg)}}',
 '@-webkit-keyframes bxpiscar{0%,55%{opacity:1}56%,100%{opacity:.2}}',
@@ -794,6 +847,14 @@ function motorTempo(raiz, tMs, durGlobal) {
 
     lista = raiz.querySelectorAll('[data-pct]');
     for (i = 0; i < lista.length; i++) lista[i].innerHTML = Math.floor(pct(lista[i])) + '%';
+
+    lista = raiz.querySelectorAll('[data-fill]');
+    for (i = 0; i < lista.length; i++) {
+        no = lista[i];
+        var pf = (100 - pct(no)).toFixed(1);
+        no.style.webkitClipPath = 'inset(' + pf + '% 0 0 0)';
+        no.style.clipPath = 'inset(' + pf + '% 0 0 0)';
+    }
 
     lista = raiz.querySelectorAll('[data-arc]');
     for (i = 0; i < lista.length; i++) {
@@ -909,7 +970,36 @@ function montar(el) {
             '<i style="width:6px;height:6px;background:' + el.corPonto + ';box-shadow:0 0 6px ' + el.corPonto + '"></i>' +
             '<span>' + esc(el.texto) + '</span></div>';
     }
+
+    if (t === 'digital') return montarDigital(el);
+
     return '';
+}
+
+/* desenho da digital (fingerprint) */
+function DIGITAL_PATHS() {
+    return [
+        'M14 62 C14 30 30 12 50 12 C70 12 86 30 86 60',
+        'M23 68 C22 38 34 22 50 22 C66 22 78 36 78 60',
+        'M32 72 C31 46 40 32 50 32 C62 32 70 44 70 60',
+        'M41 74 C40 54 44 42 50 42 C58 42 61 50 61 60 C61 68 58 74 54 78',
+        'M50 52 C55 52 54 62 50 66',
+        'M17 82 C21 96 28 104 38 108',
+        'M83 78 C81 94 73 104 63 108',
+        'M50 84 L50 110'
+    ].map(function (d) { return '<path d="' + d + '"/>'; }).join('');
+}
+function montarDigital(el) {
+    var pontas = DIGITAL_PATHS();
+    var svgBase = '<svg viewBox="0 0 100 120" fill="none" stroke="' + el.cor1 +
+        '" stroke-width="' + el.espessura + '" stroke-linecap="round" style="position:absolute;left:0;top:0;width:100%;height:100%">' + pontas + '</svg>';
+    var estiloTopo = 'position:absolute;left:0;top:0;width:100%;height:100%';
+    if (el.preencher) estiloTopo += ';-webkit-clip-path:inset(100% 0 0 0);clip-path:inset(100% 0 0 0)';
+    var svgTopo = '<svg data-fill="1" data-dur="' + durMs(el) + '" viewBox="0 0 100 120" fill="none" stroke="' + el.cor2 +
+        '" stroke-width="' + el.espessura + '" stroke-linecap="round" style="' + estiloTopo +
+        ';filter:drop-shadow(0 0 6px ' + el.cor2 + ')">' + pontas + '</svg>';
+    return '<div class="' + (el.pulsar ? 'bx-dig' : '') + '" style="position:relative;width:100%;height:100%">' +
+        svgBase + svgTopo + '</div>';
 }
 
 function montarLoading(el) {
@@ -1018,9 +1108,11 @@ function montarFacial(el) {
    ========================================================= */
 var palco = $('palco'), palcoCor = $('palcoCor'), celular = $('celular');
 
-function fundoCss() {
-    if (S.fundo.tipo === 'cor') return S.fundo.cor;
-    if (S.fundo.tipo === 'gradiente') return 'linear-gradient(' + S.fundo.ang + 'deg,' + S.fundo.cor + ',' + S.fundo.cor2 + ')';
+function fundoCss(f) {
+    f = f || S.fundo;
+    if (!f) return 'transparent';
+    if (f.tipo === 'cor') return f.cor;
+    if (f.tipo === 'gradiente') return 'linear-gradient(' + f.ang + 'deg,' + f.cor + ',' + f.cor2 + ')';
     return 'transparent';
 }
 
@@ -1243,7 +1335,8 @@ function renderCamadas() {
     var h = '';
     for (var i = S.els.length - 1; i >= 0; i--) {
         var el = S.els[i];
-        h += '<div class="camada' + (el.id === S.sel ? ' sel' : '') + (el.visivel ? '' : ' oculta') + '" data-id="' + el.id + '">' +
+        h += '<div class="camada' + (el.id === S.sel ? ' sel' : '') + (el.visivel ? '' : ' oculta') + '" data-id="' + el.id + '" draggable="true">' +
+            '<span class="pega" title="Arraste para reordenar">⠿</span>' +
             '<span class="olho" data-olho="' + el.id + '">' + (el.visivel ? '👁' : '⌀') + '</span>' +
             '<span class="nome">' + esc(el.nome) + '</span>' +
             '<span class="tag">' + el.tipo + '</span></div>';
@@ -1259,6 +1352,47 @@ $('camadas').addEventListener('click', function (e) {
     }
     var no = e.target.closest('.camada');
     if (no) { S.sel = no.dataset.id; tudo(); }
+});
+
+/* ---------- arrastar camadas pra reordenar (sobreposição) ---------- */
+var camadaArrastada = null;
+$('camadas').addEventListener('dragstart', function (e) {
+    var no = e.target.closest('.camada'); if (!no) return;
+    camadaArrastada = no.dataset.id;
+    no.classList.add('arrastando-cam');
+    try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', no.dataset.id); } catch (x) {}
+});
+$('camadas').addEventListener('dragend', function () {
+    camadaArrastada = null;
+    var l = $('camadas').querySelectorAll('.camada');
+    for (var i = 0; i < l.length; i++) l[i].classList.remove('arrastando-cam', 'alvo-cima', 'alvo-baixo');
+});
+$('camadas').addEventListener('dragover', function (e) {
+    e.preventDefault();
+    var no = e.target.closest ? e.target.closest('.camada') : null;
+    if (!no || no.dataset.id === camadaArrastada) return;
+    var l = $('camadas').querySelectorAll('.camada');
+    for (var i = 0; i < l.length; i++) l[i].classList.remove('alvo-cima', 'alvo-baixo');
+    var r = no.getBoundingClientRect();
+    no.classList.add((e.clientY - r.top) < r.height / 2 ? 'alvo-cima' : 'alvo-baixo');
+});
+$('camadas').addEventListener('drop', function (e) {
+    e.preventDefault();
+    var no = e.target.closest ? e.target.closest('.camada') : null;
+    if (!no || !camadaArrastada || no.dataset.id === camadaArrastada) return;
+    var r = no.getBoundingClientRect();
+    var antes = (e.clientY - r.top) < r.height / 2;   // soltou na metade de cima do alvo
+
+    // trabalha na ordem visível (topo da lista = topo da tela = fim de S.els)
+    var vis = S.els.map(function (x) { return x.id; }).reverse();
+    var de = vis.indexOf(camadaArrastada);
+    vis.splice(de, 1);
+    var alvo = vis.indexOf(no.dataset.id);
+    vis.splice(antes ? alvo : alvo + 1, 0, camadaArrastada);
+
+    salvarHist();
+    S.els = vis.reverse().map(function (id) { return S.els.filter(function (x) { return x.id === id; })[0]; });
+    tudo();
 });
 
 /* =========================================================
@@ -1336,6 +1470,7 @@ function renderProps() {
     }
 
     if (el.tipo === 'imagem') {
+        h += '<button class="btn pri" id="btBiblioteca" style="width:100%;justify-content:center;margin-bottom:8px">🖼 Escolher da biblioteca</button>';
         h += cTexto('URL da imagem', 'src', el.src);
         h += '<button class="btn" id="btUpload" style="width:100%;justify-content:center;margin-bottom:10px">Enviar do computador</button>';
         h += cGrupo('Encaixe', 'fit', el.fit, [{v:'contain',n:'Inteira'},{v:'cover',n:'Preencher'},{v:'fill',n:'Esticar'}]);
@@ -1415,6 +1550,17 @@ function renderProps() {
         h += cCheck('MAIÚSCULAS', 'maiusc', el.maiusc);
     }
 
+    if (el.tipo === 'digital') {
+        h += '<div class="linha2">' + cCor('Cor base', 'cor1', el.cor1) + cCor('Cor ativa', 'cor2', el.cor2) + '</div>';
+        h += cNum('Espessura das linhas', 'espessura', el.espessura, 1, 12, .5);
+        h += cCheck('Pulsar (brilho)', 'pulsar', el.pulsar);
+        h += cCheck('Preencher com o tempo (scan)', 'preencher', el.preencher);
+        if (el.preencher) {
+            h += cCheck('Usar duração da tela', 'usarGlobal', el.usarGlobal !== false);
+            if (el.usarGlobal === false) h += cNum('Duração própria (segundos)', 'durSeg', el.durSeg || 8, 1, 9999);
+        }
+    }
+
     h += '<hr style="border:0;border-top:1px solid var(--linha);margin:12px 0">';
     h += cCheck('Travar posição', 'travado', el.travado);
     h += '<div class="grupo-btn" style="margin-top:8px">' +
@@ -1432,7 +1578,7 @@ function mudarProp(k, v, commit) {
     if (el.tipo === 'loading' || el.tipo === 'facial') el.h = el.w;
     renderPalco();
     renderCamadas();
-    if (k === 'usarGlobal' || k === 'mostrarPct' || k === 'gradiente' || k === 'formato' || k === 'modelo') renderProps();
+    if (k === 'usarGlobal' || k === 'mostrarPct' || k === 'gradiente' || k === 'formato' || k === 'modelo' || k === 'preencher') renderProps();
 }
 
 $('props').addEventListener('input', function (e) {
@@ -1482,6 +1628,7 @@ $('props').addEventListener('click', function (e) {
 });
 $('props').addEventListener('click', function (e) {
     if (e.target.id === 'btUpload') $('inputImagem').click();
+    if (e.target.id === 'btBiblioteca') abrirBiblioteca();
 });
 
 /* =========================================================
@@ -1525,11 +1672,13 @@ function tudo() { renderPalco(); renderCamadas(); renderProps(); renderPropsTela
 /* =========================================================
    11. EXPORTAR HTML
    ========================================================= */
-function fontesGoogleUsadas() {
+function fontesGoogleUsadas() { return fontesGoogleUsadasEm(S.els); }
+function fontesGoogleUsadasEm(els) {
     var usadas = {}, i, j;
-    for (i = 0; i < S.els.length; i++) {
+    els = els || [];
+    for (i = 0; i < els.length; i++) {
         for (j = 0; j < FONTES.length; j++) {
-            if (FONTES[j].google && S.els[i].fonte === FONTES[j].v) usadas[FONTES[j].google] = 1;
+            if (FONTES[j].google && els[i].fonte === FONTES[j].v) usadas[FONTES[j].google] = 1;
         }
     }
     var k = Object.keys(usadas);
@@ -1540,18 +1689,23 @@ function fontesGoogleUsadas() {
            '&display=swap" rel="stylesheet">';
 }
 
-function gerarHTML() {
+function gerarHTML() { return gerarHTMLDe(S); }
+
+function gerarHTMLDe(o) {
+    o = o || S;
+    var els = o.els || [], disp = o.disp || { w: 390, h: 844 };
+    var dur = o.duracaoMin || 59;
     var corpo = '', i;
-    for (i = 0; i < S.els.length; i++) {
-        var el = S.els[i];
-        if (!el.visivel) continue;
+    for (i = 0; i < els.length; i++) {
+        var el = els[i];
+        if (el.visivel === false) continue;
         corpo += '  <div class="bx-el" style="left:' + el.x + 'px;top:' + el.y + 'px;width:' + el.w + 'px;height:' + el.h + 'px;' +
-            'opacity:' + (el.op / 100) + ';z-index:' + (i + 1) + ';' +
+            'opacity:' + ((el.op == null ? 100 : el.op) / 100) + ';z-index:' + (i + 1) + ';' +
             (el.rot ? 'transform:rotate(' + el.rot + 'deg);-webkit-transform:rotate(' + el.rot + 'deg);' : '') + '">' +
             montar(el) + '</div>\n';
     }
 
-    var g = fontesGoogleUsadas();
+    var g = fontesGoogleUsadasEm(els);
 
     return '<!DOCTYPE html>\n<html lang="pt-BR">\n<head>\n' +
 '<meta charset="UTF-8">\n' +
@@ -1560,16 +1714,16 @@ function gerarHTML() {
 '<style>\n' +
 'html,body{margin:0;padding:0;width:100%;height:100%;background:transparent;overflow:hidden}\n' +
 '*{box-sizing:border-box}\n' +
-'#bxPalco{position:fixed;left:50%;top:50%;width:' + S.disp.w + 'px;height:' + S.disp.h + 'px;' +
-'margin-left:' + (-S.disp.w / 2) + 'px;margin-top:' + (-S.disp.h / 2) + 'px;' +
-'background:' + fundoCss() + ';overflow:hidden;' +
+'#bxPalco{position:fixed;left:50%;top:50%;width:' + disp.w + 'px;height:' + disp.h + 'px;' +
+'margin-left:' + (-disp.w / 2) + 'px;margin-top:' + (-disp.h / 2) + 'px;' +
+'background:' + fundoCss(o.fundo) + ';overflow:hidden;' +
 '-webkit-transform-origin:center center;transform-origin:center center;' +
 '-webkit-user-select:none;user-select:none;-webkit-font-smoothing:antialiased}\n' +
 CSS_ELS + '\n</style>\n</head>\n<body>\n\n' +
 '<div id="bxPalco">\n' + corpo + '</div>\n\n' +
 '<script>\n' +
 '/* ===== CONFIGURAÇÃO ===== */\n' +
-'var DURACAO_MINUTOS = ' + S.duracaoMin + ';   // duração da tela\n' +
+'var DURACAO_MINUTOS = ' + dur + ';   // duração da tela\n' +
 'var AJUSTAR_NA_TELA = true;            // redimensiona pra caber em qualquer celular\n\n' +
 '(function(){\n' +
 '"use strict";\n' +
@@ -1578,7 +1732,7 @@ CSS_ELS + '\n</style>\n</head>\n<body>\n\n' +
 '/* ajusta a escala pro tamanho real do aparelho */\n' +
 'function escalar(){\n' +
 '  if(!AJUSTAR_NA_TELA)return;\n' +
-'  var k=Math.min(window.innerWidth/' + S.disp.w + ', window.innerHeight/' + S.disp.h + ');\n' +
+'  var k=Math.min(window.innerWidth/' + disp.w + ', window.innerHeight/' + disp.h + ');\n' +
 '  palco.style.webkitTransform="scale("+k+")";\n' +
 '  palco.style.transform="scale("+k+")";\n' +
 '}\n' +
@@ -1685,22 +1839,59 @@ var MODELOS = [
 }
 ];
 
-function abrirModelos() {
-    var h = '';
-    for (var i = 0; i < MODELOS.length; i++) {
-        var m = MODELOS[i], els = m.els(), inner = '';
-        for (var j = 0; j < els.length; j++) {
-            var el = els[j];
-            inner += '<div class="bx-el" style="left:' + el.x + 'px;top:' + el.y + 'px;width:' + el.w + 'px;height:' + el.h + 'px;opacity:' + (el.op / 100) + '">' + montar(el) + '</div>';
-        }
-        h += '<div class="modelo" data-m="' + i + '"><div class="mini">' +
-            '<div style="width:390px;height:844px;position:relative;transform:scale(.172)">' + inner + '</div></div>' +
-            '<div class="txt"><b>' + m.nome + '</b><span>' + m.desc + '</span></div></div>';
+var EH_DONO = false;
+
+function projetoDoModelo(m) {
+    return { disp: { w: 390, h: 844 }, fundo: { tipo: 'transparente' }, duracaoMin: m.dur, els: m.els() };
+}
+function miniPreview(o) {
+    var els = o.els || [], inner = '';
+    var dw = (o.disp && o.disp.w) || 390, dh = (o.disp && o.disp.h) || 844;
+    for (var j = 0; j < els.length; j++) {
+        var el = els[j];
+        if (el.visivel === false) continue;
+        inner += '<div class="bx-el" style="left:' + el.x + 'px;top:' + el.y + 'px;width:' + el.w +
+            'px;height:' + el.h + 'px;opacity:' + ((el.op == null ? 100 : el.op) / 100) +
+            (el.rot ? ';transform:rotate(' + el.rot + 'deg)' : '') + '">' + montar(el) + '</div>';
     }
-    $('galeria').innerHTML = h;
+    var escala = (168 / dh);
+    return '<div class="mini"><div class="bg" style="background:' + fundoCss(o.fundo) + '"></div>' +
+        '<div style="width:' + dw + 'px;height:' + dh + 'px;position:relative;transform:scale(' + escala.toFixed(3) + ')">' + inner + '</div></div>';
+}
+function cardModelo(nome, desc, tipo, ref, podeApagar) {
+    var proj = (tipo === 'pronto') ? projetoDoModelo(MODELOS[ref]) : (modelosNuvem[ref].dados || {});
+    return '<div class="modelo" data-tipo="' + tipo + '" data-ref="' + ref + '">' +
+        miniPreview(proj) +
+        (podeApagar ? '<button class="apagar-nuvem" data-apagar="' + esc(modelosNuvem[ref].id) + '" title="Excluir modelo">×</button>' : '') +
+        '<div class="txt"><b>' + esc(nome) + '</b><span>' + esc(desc) + '</span></div>' +
+        '<div class="acoes"><button class="btn mini" data-acao="dup">Duplicar</button>' +
+        '<button class="btn mini pri" data-acao="html">Copiar HTML</button></div></div>';
+}
+
+function abrirModelos() {
     $('modalModelos').classList.add('abrir');
-    motorTempo($('galeria'), 25000, 60000);
-    carregarModelosNuvem();
+    renderPaginaModelos();
+}
+function renderPaginaModelos() {
+    var gp = $('galeria'), hp = '', i;
+    for (i = 0; i < MODELOS.length; i++) hp += cardModelo(MODELOS[i].nome, MODELOS[i].desc, 'pronto', i, false);
+    gp.innerHTML = hp;
+    motorTempo(gp, 25000, 60000);
+
+    var g = $('galeriaNuvem');
+    g.innerHTML = '<div class="vazio">Carregando modelos da equipe...</div>';
+    fetch('/api/modelos', { credentials: 'same-origin' })
+        .then(function (r) { if (r.status === 401) { irParaLogin(); throw 0; } return r.json(); })
+        .then(function (lista) {
+            modelosNuvem = lista || [];
+            $('nuvemVazia').style.display = modelosNuvem.length ? 'none' : 'block';
+            var h = '';
+            for (var k = 0; k < modelosNuvem.length; k++)
+                h += cardModelo(modelosNuvem[k].nome, modelosNuvem[k].desc || 'modelo da equipe', 'nuvem', k, EH_DONO);
+            g.innerHTML = h;
+            motorTempo(g, 25000, 60000);
+        })
+        .catch(function () { if (g.innerHTML.indexOf('Carregando') >= 0) g.innerHTML = '<div class="vazio">Não consegui carregar a nuvem.</div>'; });
 }
 
 function aplicarProjeto(o, nome) {
@@ -1708,68 +1899,54 @@ function aplicarProjeto(o, nome) {
     S.disp = o.disp || S.disp;
     S.fundo = o.fundo || { tipo: 'transparente', cor: '#000000', cor2: '#1B4EF5', ang: 160 };
     S.duracaoMin = o.duracaoMin || 59;
-    S.els = o.els || [];
+    S.els = clone(o.els || []);
     S.sel = null;
     $('modalModelos').classList.remove('abrir');
     tempoPct = 0;
     tudo();
-    if (nome) toast('Modelo "' + nome + '" carregado', 'ok');
+    if (nome) toast('Duplicado de "' + nome + '" — edite à vontade', 'ok');
+}
+function projetoDoCard(no) {
+    if (no.dataset.tipo === 'pronto') { var m = MODELOS[+no.dataset.ref]; return { o: projetoDoModelo(m), nome: m.nome }; }
+    var c = modelosNuvem[+no.dataset.ref]; return { o: c.dados || {}, nome: c.nome };
+}
+function copiarTexto(txt, okMsg) {
+    function fallback() {
+        var ta = document.createElement('textarea');
+        ta.value = txt; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        try { document.execCommand('copy'); toast(okMsg, 'ok'); } catch (e) { toast('Não consegui copiar', 'erro'); }
+        ta.remove();
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText)
+        navigator.clipboard.writeText(txt).then(function () { toast(okMsg, 'ok'); }, fallback);
+    else fallback();
 }
 
-$('galeria').addEventListener('click', function (e) {
-    var no = e.target.closest('.modelo'); if (!no) return;
-    var m = MODELOS[+no.dataset.m];
-    var o = { disp: { w: 390, h: 844 }, fundo: { tipo: 'transparente' }, duracaoMin: m.dur, els: m.els() };
-    aplicarProjeto(o, m.nome);
-});
-
-/* ---------- modelos da nuvem ---------- */
 var modelosNuvem = [];
 
-function carregarModelosNuvem() {
-    var g = $('galeriaNuvem');
-    g.innerHTML = '<div class="vazio">Carregando...</div>';
-    fetch('/api/modelos', { credentials: 'same-origin' })
-        .then(function (r) { if (r.status === 401) { irParaLogin(); throw 0; } return r.json(); })
-        .then(function (lista) {
-            modelosNuvem = lista || [];
-            $('nuvemVazia').style.display = modelosNuvem.length ? 'none' : 'block';
-            var h = '';
-            for (var i = 0; i < modelosNuvem.length; i++) {
-                var m = modelosNuvem[i], d = m.dados || {}, els = d.els || [], inner = '';
-                var dw = (d.disp && d.disp.w) || 390, dh = (d.disp && d.disp.h) || 844;
-                for (var j = 0; j < els.length; j++) {
-                    var el = els[j];
-                    if (el.visivel === false) continue;
-                    inner += '<div class="bx-el" style="left:' + el.x + 'px;top:' + el.y + 'px;width:' + el.w +
-                        'px;height:' + el.h + 'px;opacity:' + ((el.op == null ? 100 : el.op) / 100) +
-                        (el.rot ? ';transform:rotate(' + el.rot + 'deg)' : '') + '">' + montar(el) + '</div>';
-                }
-                var escala = (148 / dh);
-                h += '<div class="modelo" data-nuvem="' + i + '"><div class="mini">' +
-                    '<div style="width:' + dw + 'px;height:' + dh + 'px;position:relative;transform:scale(' + escala.toFixed(3) + ')">' + inner + '</div></div>' +
-                    '<button class="apagar-nuvem" data-apagar="' + m.id + '" title="Apagar da nuvem">×</button>' +
-                    '<div class="txt"><b>' + esc(m.nome) + '</b><span>' + esc(m.desc || 'modelo da equipe') + '</span></div></div>';
-            }
-            g.innerHTML = h;
-            motorTempo(g, 25000, 60000);
-        })
-        .catch(function () { if (g.innerHTML.indexOf('Carregando') >= 0) g.innerHTML = '<div class="vazio">Não consegui carregar a nuvem.</div>'; });
-}
-
-$('galeriaNuvem').addEventListener('click', function (e) {
-    var ap = e.target.closest('[data-apagar]');
+/* clique nos cards das duas galerias */
+function cliqueGaleria(e) {
+    var ap = e.target.closest ? e.target.closest('[data-apagar]') : null;
     if (ap) {
         e.stopPropagation();
-        if (!confirm('Apagar este modelo da nuvem? Isso afeta todo mundo.')) return;
+        if (!confirm('Excluir este modelo da nuvem? Isso afeta todo mundo.')) return;
         fetch('/api/modelos/' + ap.dataset.apagar, { method: 'DELETE', credentials: 'same-origin' })
-            .then(function (r) { if (r.status === 401) return irParaLogin(); carregarModelosNuvem(); toast('Modelo apagado', 'ok'); });
+            .then(function (r) {
+                if (r.status === 401) return irParaLogin();
+                if (r.status === 403) { toast('Só o dono pode excluir', 'erro'); return; }
+                renderPaginaModelos(); toast('Modelo excluído', 'ok');
+            });
         return;
     }
-    var no = e.target.closest('.modelo'); if (!no) return;
-    var m = modelosNuvem[+no.dataset.nuvem];
-    if (m && m.dados) aplicarProjeto(m.dados, m.nome);
-});
+    var no = e.target.closest ? e.target.closest('.modelo') : null;
+    if (!no) return;
+    var info = projetoDoCard(no);
+    if (e.target.dataset.acao === 'html') { copiarTexto(gerarHTMLDe(info.o), 'HTML copiado — cole no seu app'); return; }
+    aplicarProjeto(info.o, info.nome);   // Duplicar (ou clique no card)
+}
+$('galeria').addEventListener('click', cliqueGaleria);
+$('galeriaNuvem').addEventListener('click', cliqueGaleria);
 
 /* =========================================================
    13. SALVAR / ABRIR / AUTO-SALVAR
@@ -1821,15 +1998,15 @@ $('inputArquivo').addEventListener('change', function (e) {
     r.readAsText(f);
     e.target.value = '';
 });
-/* comprime qualquer foto antes de guardar: reduz pra caber leve no HTML */
-function carregarImagemNoElemento(f, el) {
-    if (!f || !el) return;
+/* comprime qualquer foto e devolve o dataURL pronto */
+function comprimirImagem(f, cb) {
+    if (!f) return;
     if (!/^image\//.test(f.type)) { toast('Isso não é uma imagem', 'erro'); return; }
     var r = new FileReader();
     r.onload = function () {
         var img = new Image();
         img.onload = function () {
-            var MAX = 1080;                       // maior lado permitido
+            var MAX = 1080;
             var w = img.width, h = img.height;
             if (w > MAX || h > MAX) {
                 if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
@@ -1838,20 +2015,25 @@ function carregarImagemNoElemento(f, el) {
             var cv = document.createElement('canvas');
             cv.width = w; cv.height = h;
             cv.getContext('2d').drawImage(img, 0, 0, w, h);
-            // PNG mantém transparência; se a foto for JPG, exporta JPG (bem menor)
             var ehJpg = /jpe?g/.test(f.type);
-            var out = cv.toDataURL(ehJpg ? 'image/jpeg' : 'image/png', ehJpg ? 0.85 : undefined);
-            salvarHist();
-            el.src = out;
-            // ajusta a proporção do quadro à da imagem, mantendo a largura
-            el.h = Math.max(20, Math.round(el.w * h / w));
-            tudo();
-            toast('Imagem carregada', 'ok');
+            cb(cv.toDataURL(ehJpg ? 'image/jpeg' : 'image/png', ehJpg ? 0.85 : undefined), w, h);
         };
         img.onerror = function () { toast('Não consegui ler essa imagem', 'erro'); };
         img.src = r.result;
     };
     r.readAsDataURL(f);
+}
+
+/* usa a imagem comprimida num elemento */
+function carregarImagemNoElemento(f, el) {
+    if (!f || !el) return;
+    comprimirImagem(f, function (out, w, h) {
+        salvarHist();
+        el.src = out;
+        el.h = Math.max(20, Math.round(el.w * h / w));
+        tudo();
+        toast('Imagem carregada', 'ok');
+    });
 }
 
 $('inputImagem').addEventListener('change', function (e) {
@@ -1918,6 +2100,97 @@ $('btNuvem').addEventListener('click', function () {
 $('btSair').addEventListener('click', function () {
     fetch('/api/logout', { method: 'POST', credentials: 'same-origin' })
         .then(function () { window.location.href = '/'; });
+});
+
+/* =========================================================
+   BIBLIOTECA DE IMAGENS
+   ========================================================= */
+var imagensBib = [];
+
+function abrirBiblioteca() {
+    $('modalImagens').classList.add('abrir');
+    $('donoAddImg').style.display = EH_DONO ? 'block' : 'none';
+    carregarImagens();
+}
+
+function carregarImagens() {
+    var g = $('galeriaImagens');
+    g.innerHTML = '<div class="vazio">Carregando...</div>';
+    fetch('/api/imagens', { credentials: 'same-origin' })
+        .then(function (r) { if (r.status === 401) { irParaLogin(); throw 0; } return r.json(); })
+        .then(function (lista) {
+            imagensBib = lista || [];
+            $('imgVazia').style.display = imagensBib.length ? 'none' : 'block';
+            var h = '';
+            for (var i = 0; i < imagensBib.length; i++) {
+                var im = imagensBib[i];
+                h += '<div class="modelo" data-img="' + i + '">' +
+                    '<div class="mini" style="height:120px;background:#06080c">' +
+                    '<img src="' + esc(im.src) + '" style="max-width:100%;max-height:100%;object-fit:contain">' +
+                    '</div>' +
+                    (EH_DONO ? '<button class="apagar-nuvem" data-apagarimg="' + esc(im.id) + '" title="Excluir">×</button>' : '') +
+                    '<div class="txt"><b>' + esc(im.nome) + '</b></div></div>';
+            }
+            g.innerHTML = h;
+        })
+        .catch(function () { if (g.innerHTML.indexOf('Carregando') >= 0) g.innerHTML = '<div class="vazio">Não consegui carregar.</div>'; });
+}
+
+$('galeriaImagens').addEventListener('click', function (e) {
+    var ap = e.target.closest ? e.target.closest('[data-apagarimg]') : null;
+    if (ap) {
+        e.stopPropagation();
+        if (!confirm('Excluir esta imagem da biblioteca?')) return;
+        fetch('/api/imagens/' + ap.dataset.apagarimg, { method: 'DELETE', credentials: 'same-origin' })
+            .then(function (r) {
+                if (r.status === 403) { toast('Só o dono pode excluir', 'erro'); return; }
+                carregarImagens(); toast('Imagem excluída', 'ok');
+            });
+        return;
+    }
+    var no = e.target.closest ? e.target.closest('[data-img]') : null;
+    if (!no) return;
+    var im = imagensBib[+no.dataset.img];
+    var el = sel();
+    if (im && el && el.tipo === 'imagem') {
+        salvarHist();
+        el.src = im.src;
+        // ajusta proporção do quadro à imagem
+        var teste = new Image();
+        teste.onload = function () { el.h = Math.max(20, Math.round(el.w * teste.height / teste.width)); tudo(); };
+        teste.src = im.src;
+        $('modalImagens').classList.remove('abrir');
+        tudo();
+        toast('Imagem aplicada', 'ok');
+    } else {
+        toast('Selecione um elemento de imagem primeiro', 'erro');
+    }
+});
+
+/* dono adiciona imagem por URL ou upload */
+function salvarImagemBib(nome, src) {
+    fetch('/api/imagens', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome: nome, src: src })
+    }).then(function (r) {
+        if (r.status === 403) { toast('Só o dono pode adicionar', 'erro'); return; }
+        if (r.ok) { carregarImagens(); toast('Imagem salva na biblioteca', 'ok'); }
+        else toast('Falha ao salvar', 'erro');
+    }).catch(function () { toast('Erro de conexão', 'erro'); });
+}
+
+$('imgAddUrl').addEventListener('click', function () {
+    var url = $('imgUrl').value.trim();
+    if (!url) { toast('Cole uma URL', 'erro'); return; }
+    salvarImagemBib(url.split('/').pop().slice(0, 40) || 'imagem', url);
+    $('imgUrl').value = '';
+});
+$('imgAddUpload').addEventListener('click', function () { $('inputImgBib').click(); });
+$('inputImgBib').addEventListener('change', function (e) {
+    var f = e.target.files[0]; if (!f) return;
+    comprimirImagem(f, function (dataUrl) { salvarImagemBib(f.name.slice(0, 40), dataUrl); });
+    e.target.value = '';
 });
 
 /* =========================================================
@@ -2011,6 +2284,16 @@ window.addEventListener('beforeunload', autoSalvar);
     $('selDispositivo').value = S.disp.w + 'x' + S.disp.h;
     tudo();
     tempoPct = 22; aplicarTempo();
+
+    // descobre se este navegador está em "modo dono"
+    fetch('/api/me', { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+            EH_DONO = !!(j && j.dono);
+            var badge = document.getElementById('donoBadge');
+            if (badge) badge.style.display = EH_DONO ? 'inline-flex' : 'none';
+        })
+        .catch(function () {});
 })();
 </script>
 </body>
