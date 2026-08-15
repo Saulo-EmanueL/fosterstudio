@@ -295,6 +295,16 @@ input[type=color] {
 /* trava fina que aparece ao mover (encaixe no centro) */
 .el.arrastando { outline: 1.5px solid var(--azul); }
 
+/* caixa de edição de texto inline (aparece por cima do elemento) */
+.editor-inline {
+    position: absolute; z-index: 50;
+    margin: 0; padding: 0; border: 0; outline: 2px solid var(--azul);
+    background: rgba(0,0,0,.28);
+    resize: none; overflow: hidden;
+    display: flex; box-sizing: border-box;
+    -webkit-transform-origin: center center; transform-origin: center center;
+}
+
 .guia {
     position: absolute; background: var(--vermelho);
     z-index: 55; pointer-events: none; opacity: .9;
@@ -1069,6 +1079,7 @@ function aplicarTempo() {
 var arraste = null;
 
 palco.addEventListener('mousedown', function (e) {
+    if (editando) return;   // não interfere na edição de texto em andamento
     var alca = e.target.closest ? e.target.closest('.alca') : null;
     var rot  = e.target.closest ? e.target.closest('.rotante') : null;
     var no   = e.target.closest ? e.target.closest('.el') : null;
@@ -1085,6 +1096,7 @@ palco.addEventListener('mousedown', function (e) {
         el: el, x0: e.clientX, y0: e.clientY,
         ex: el.x, ey: el.y, ew: el.w, eh: el.h, erot: el.rot || 0,
         cx: cx, cy: cy,
+        etam: el.tam, etamPct: el.tamPct, eh2: el.h2,   // valores de fonte no início do arrasto
         modo: rot ? 'girar' : (alca ? alca.className.split(' ')[1] : 'mover')
     };
     document.body.style.cursor = rot ? 'grabbing' : '';
@@ -1118,12 +1130,27 @@ document.addEventListener('mousemove', function (e) {
         if (Math.abs(ccy - S.disp.h / 2) < 7) el.y = Math.round((S.disp.h - el.h) / 2);   // centro vertical
     } else {
         var mm = m;
+        var canto = (mm.length === 2);   // nw/ne/sw/se = redimensiona proporcional
         if (mm.indexOf('e') >= 0) el.w = Math.max(minW, Math.round(arraste.ew + dx));
         if (mm.indexOf('w') >= 0) { el.w = Math.max(minW, Math.round(arraste.ew - dx)); el.x = Math.round(arraste.ex + (arraste.ew - el.w)); }
         if (mm.indexOf('s') >= 0) el.h = Math.max(minH, Math.round(arraste.eh + dy));
         if (mm.indexOf('n') >= 0) { el.h = Math.max(minH, Math.round(arraste.eh - dy)); el.y = Math.round(arraste.ey + (arraste.eh - el.h)); }
         if (ehImg) el.h = el.w;                                  // loading/facial sempre redondo
         if (el.tipo === 'barra') el.h = Math.max(el.h2 + 4, el.h);
+
+        // ---- a FONTE acompanha o tamanho da caixa ----
+        var razao;
+        if (el.tipo === 'texto' || el.tipo === 'contador' || el.tipo === 'selo') {
+            // texto: pelo canto escala pela largura; pela lateral vertical usa a altura
+            razao = canto ? (el.w / arraste.ew) : (mm.indexOf('n') >= 0 || mm.indexOf('s') >= 0 ? (el.h / arraste.eh) : (el.w / arraste.ew));
+            if (arraste.etam) el.tam = Math.max(6, Math.round(arraste.etam * razao * 10) / 10);
+        } else if (ehImg && el.mostrarPct && arraste.etamPct) {
+            el.tamPct = Math.max(6, Math.round(arraste.etamPct * (el.w / arraste.ew)));
+        } else if (el.tipo === 'barra' && arraste.eh2) {
+            // barra: engrossa junto com a altura da caixa
+            razao = el.h / arraste.eh;
+            el.h2 = Math.max(1, Math.round(arraste.eh2 * razao));
+        }
     }
     renderPalco();
     atualizarCamposPos();
@@ -1135,10 +1162,61 @@ document.addEventListener('mouseup', function () {
 
 function atualizarCamposPos() {
     var el = sel(); if (!el) return;
-    ['x', 'y', 'w', 'h', 'rot'].forEach(function (k) {
+    ['x', 'y', 'w', 'h', 'rot', 'tam', 'tamPct', 'h2'].forEach(function (k) {
+        if (el[k] === undefined) return;
         var i = document.querySelector('#props [data-k="' + k + '"]');
         if (i && document.activeElement !== i) i.value = el[k];
     });
+}
+
+/* =========================================================
+   EDIÇÃO DE TEXTO DIRETO NO PALCO (igual Canva)
+   ========================================================= */
+var editando = null;   // elemento sendo editado
+
+function editarInline(el) {
+    if (editando) return;
+    editando = el;
+    renderPalco();  // garante que o elemento existe no DOM
+
+    var ta = document.createElement('textarea');
+    ta.className = 'editor-inline';
+    ta.value = el.texto;
+
+    // posiciona exatamente sobre o elemento (coordenadas do palco = mesma escala)
+    ta.style.left = el.x + 'px';
+    ta.style.top = el.y + 'px';
+    ta.style.width = el.w + 'px';
+    ta.style.height = el.h + 'px';
+    ta.style.fontFamily = el.fonte || FONTES[0].v;
+    ta.style.fontSize = (el.tam || 18) + 'px';
+    ta.style.fontWeight = el.peso || 700;
+    ta.style.color = el.cor || '#fff';
+    ta.style.textAlign = el.align || 'center';
+    ta.style.lineHeight = el.lh || 1.25;
+    ta.style.letterSpacing = (el.ls || 0) + 'px';
+    if (el.maiusc) ta.style.textTransform = 'uppercase';
+    if (el.rot) ta.style.transform = 'rotate(' + el.rot + 'deg)';
+
+    palco.appendChild(ta);
+    ta.focus();
+    ta.select();
+
+    function commit(salvar) {
+        if (!editando) return;
+        editando = null;
+        if (salvar) { salvarHist(); el.texto = ta.value; }
+        if (ta.parentNode) ta.parentNode.removeChild(ta);
+        tudo();
+    }
+    ta.addEventListener('blur', function () { commit(true); });
+    ta.addEventListener('keydown', function (ev) {
+        ev.stopPropagation();               // não deixa os atalhos do editor rodarem
+        if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); ta.blur(); }   // Enter conclui
+        if (ev.key === 'Escape') { editando = null; if (ta.parentNode) ta.parentNode.removeChild(ta); tudo(); }
+    });
+    // enquanto digita, atualiza o texto ao vivo por baixo (opcional/leve)
+    ta.addEventListener('input', function () { el.texto = ta.value; });
 }
 
 /* duplo clique num texto/selo edita direto no palco */
@@ -1147,8 +1225,7 @@ palco.addEventListener('dblclick', function (e) {
     if (!no) return;
     var el = S.els.filter(function (x) { return x.id === no.dataset.id; })[0];
     if (!el || (el.tipo !== 'texto' && el.tipo !== 'selo')) return;
-    var novo = prompt('Texto:', el.texto);
-    if (novo !== null) { salvarHist(); el.texto = novo; tudo(); }
+    editarInline(el);
 });
 
 /* =========================================================
