@@ -160,6 +160,21 @@ button, input, select, textarea { font-family: inherit; font-size: 12px; color: 
     font-size: 10px; font-weight: 700; letter-spacing: .8px;
     text-transform: uppercase; color: var(--txt2);
 }
+.prop-secao {
+    font-size: 10px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--azul); margin: 15px 0 9px; padding-top: 12px;
+    border-top: 1px solid var(--linha);
+}
+/* caixa que agrupa os opcionais/marcáveis */
+.prop-opcoes { background: rgba(62,155,255,.05); border: 1px solid var(--linha);
+    border-radius: 9px; padding: 10px 11px 6px; margin-top: 4px; }
+.prop-opcoes .check { padding: 5px 0; }
+.alinhar { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+.alinhar button {
+    padding: 7px 0; background: var(--bg); border: 1px solid var(--linha);
+    border-radius: 6px; cursor: pointer; color: var(--txt2); font-size: 15px; line-height: 1;
+}
+.alinhar button:hover { border-color: var(--azul); color: var(--azul); background: rgba(62,155,255,.1); }
 .campo input[type=text], .campo input[type=number], .campo select, .campo textarea {
     width: 100%;
     background: var(--bg);
@@ -900,7 +915,12 @@ function motorTempo(raiz, tMs, durGlobal) {
 /* =========================================================
    6. GERADOR DE MARCAÇÃO DOS ELEMENTOS
    ========================================================= */
-function sombraTxt(el) { return el.sombra ? 'text-shadow:0 2px 10px rgba(0,0,0,.6);' : ''; }
+function sombraTxt(el) {
+    var s = [];
+    if (el.sombra) s.push('0 2px 10px rgba(0,0,0,.6)');
+    if (el.glow) { var cg = el.corGlow || '#3E9BFF'; s.push('0 0 9px ' + cg, '0 0 18px ' + cg); }
+    return s.length ? ('text-shadow:' + s.join(',') + ';') : '';
+}
 function rgba(hex, op) {
     hex = (hex || '#000').replace('#', '');
     if (hex.length === 3) hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
@@ -933,6 +953,7 @@ function montar(el) {
         }
         return '<img class="bx-img" src="' + esc(el.src) + '" alt="" style="object-fit:' + el.fit + ';' +
             'border-radius:' + el.radius + 'px;' +
+            (el.temBorda ? 'border:' + (el.borda == null ? 2 : el.borda) + 'px solid ' + (el.corBorda || '#ffffff') + ';' : '') +
             (el.sombra ? 'filter:drop-shadow(0 6px 20px rgba(0,0,0,.5));' : '') + '">';
     }
 
@@ -966,10 +987,13 @@ function montar(el) {
         var fundo = el.gradiente
             ? 'linear-gradient(135deg,' + el.cor1 + ',' + el.cor2 + ')'
             : el.cor1;
+        var sombras = [];
+        if (el.sombra) sombras.push('0 10px 30px rgba(0,0,0,.45)');
+        if (el.glow) sombras.push('0 0 22px ' + (el.corGlow || '#3E9BFF'));
         return '<div style="width:100%;height:100%;background:' + fundo + ';' +
             'border-radius:' + (el.formato === 'circulo' ? '50%' : el.radius + 'px') + ';' +
             (el.borda > 0 ? 'border:' + el.borda + 'px solid ' + el.corBorda + ';' : '') +
-            (el.sombra ? 'box-shadow:0 10px 30px rgba(0,0,0,.45);' : '') + '"></div>';
+            (sombras.length ? 'box-shadow:' + sombras.join(',') + ';' : '') + '"></div>';
     }
 
     if (t === 'selo') {
@@ -1467,6 +1491,22 @@ function cSel(l, k, v, ops) {
 function cCheck(l, k, v) {
     return '<label class="check"><input type="checkbox" data-k="' + k + '"' + (v ? ' checked' : '') + '><span>' + l + '</span></label>';
 }
+function cSecao(t) { return '<div class="prop-secao">' + t + '</div>'; }
+/* brilho/glow neon reutilizável */
+function cGlow(el) {
+    var h = cCheck('Brilho neon (glow)', 'glow', el.glow);
+    if (el.glow) h += cCor('Cor do brilho', 'corGlow', el.corGlow || '#3E9BFF');
+    return h;
+}
+/* bloco de borda/contorno reutilizável (largura + cor) */
+function cBorda(el) {
+    var h = cCheck('Borda / contorno', 'temBorda', el.temBorda);
+    if (el.temBorda) {
+        h += '<div class="linha2">' + cNum('Espessura', 'borda', el.borda == null ? 2 : el.borda, 0, 40) +
+             cCor('Cor da borda', 'corBorda', el.corBorda || '#ffffff') + '</div>';
+    }
+    return h;
+}
 function cGrupo(l, k, v, ops) {
     var o = '';
     for (var i = 0; i < ops.length; i++) {
@@ -1489,24 +1529,41 @@ function renderProps() {
     h += '<div class="linha2">' + cNum('Largura', 'w', el.w, 4) + cNum('Altura', 'h', el.h, 4) + '</div>';
     h += '<div class="linha2">' + cNum('Rotação', 'rot', el.rot, -180, 180) +
          cNum('Opacidade', 'op', el.op, 0, 100) + '</div>';
-    h += '<div class="grupo-btn" style="margin-bottom:10px">' +
-         '<button data-acao="centroH">↔ Centralizar</button>' +
+    h += '<div class="campo"><label>Alinhar na tela</label><div class="alinhar">' +
+         '<button data-acao="alEsq"    title="Esquerda">⇤</button>' +
+         '<button data-acao="alCentroH" title="Centro horizontal">↔</button>' +
+         '<button data-acao="alDir"    title="Direita">⇥</button>' +
+         '<button data-acao="alTopo"   title="Topo">⤒</button>' +
+         '<button data-acao="alCentroV" title="Centro vertical">↕</button>' +
+         '<button data-acao="alBase"   title="Base">⤓</button>' +
+         '</div></div>';
+    h += '<div class="campo"><label>Ordem (sobreposição)</label><div class="grupo-btn">' +
+         '<button data-acao="fundoTudo" title="Pro fundo de tudo">⤓ Fundo</button>' +
+         '<button data-acao="tras">↓ Trás</button>' +
          '<button data-acao="frente">↑ Frente</button>' +
-         '<button data-acao="tras">↓ Trás</button></div>';
+         '<button data-acao="frenteTudo" title="Pra frente de tudo">⤒ Topo</button></div></div>';
 
     h += '<hr style="border:0;border-top:1px solid var(--linha);margin:12px 0">';
+
+    // abre/fecha a caixa de opções agrupadas
+    function ops(inner) { return cSecao('Opções') + '<div class="prop-opcoes">' + inner + '</div>'; }
+    var pesos = [{v:300,n:'Fino'},{v:400,n:'Normal'},{v:600,n:'Semi'},{v:700,n:'Negrito'},{v:800,n:'Extra'},{v:900,n:'Black'}];
+    var aligns = [{v:'left',n:'Esq'},{v:'center',n:'Centro'},{v:'right',n:'Dir'}];
 
     if (el.tipo === 'texto') {
         h += cArea('Texto', 'texto', el.texto);
         h += cSel('Fonte', 'fonte', el.fonte, opsFonte());
-        h += '<div class="linha2">' + cNum('Tamanho', 'tam', el.tam, 6, 200) +
-             cSel('Peso', 'peso', el.peso, [{v:300,n:'Fino'},{v:400,n:'Normal'},{v:600,n:'Semi'},{v:700,n:'Negrito'},{v:800,n:'Extra'},{v:900,n:'Black'}]) + '</div>';
-        h += cGrupo('Alinhamento', 'align', el.align, [{v:'left',n:'Esq'},{v:'center',n:'Centro'},{v:'right',n:'Dir'}]);
+        h += '<div class="linha2">' + cNum('Tamanho', 'tam', el.tam, 6, 200) + cSel('Peso', 'peso', el.peso, pesos) + '</div>';
+        h += cGrupo('Alinhamento', 'align', el.align, aligns);
         h += cCor('Cor', 'cor', el.cor);
-        h += '<div class="linha2">' + cNum('Espaço letras', 'ls', el.ls, -10, 20, .1) +
-             cNum('Altura linha', 'lh', el.lh, .8, 3, .05) + '</div>';
-        h += cCheck('Itálico', 'italico', el.italico) + cCheck('MAIÚSCULAS', 'maiusc', el.maiusc) +
-             cCheck('Sombra (legível em fundo claro)', 'sombra', el.sombra);
+        h += '<div class="linha2">' + cNum('Espaço letras', 'ls', el.ls, -10, 20, .1) + cNum('Altura linha', 'lh', el.lh, .8, 3, .05) + '</div>';
+        h += ops(
+            cCheck('Itálico', 'italico', el.italico) +
+            cCheck('MAIÚSCULAS', 'maiusc', el.maiusc) +
+            cCheck('Sombra (legível em fundo claro)', 'sombra', el.sombra) +
+            cGlow(el) +
+            cBorda(el)
+        );
     }
 
     if (el.tipo === 'imagem') {
@@ -1515,69 +1572,80 @@ function renderProps() {
         h += '<button class="btn" id="btUpload" style="width:100%;justify-content:center;margin-bottom:10px">Enviar do computador</button>';
         h += cGrupo('Encaixe', 'fit', el.fit, [{v:'contain',n:'Inteira'},{v:'cover',n:'Preencher'},{v:'fill',n:'Esticar'}]);
         h += cNum('Cantos', 'radius', el.radius, 0, 400);
-        h += cCheck('Sombra', 'sombra', el.sombra);
+        h += ops(cCheck('Sombra', 'sombra', el.sombra) + cBorda(el));
     }
 
     if (el.tipo === 'barra') {
-        h += cNum('Espessura da barra', 'h2', el.h2, 1, 80);
+        h += cRange('Espessura (finura)', 'h2', el.h2, 1, 40, 1, 'px');
         h += cNum('Cantos', 'radius', el.radius, 0, 100);
         h += '<div class="linha2">' + cCor('Início', 'cor1', el.cor1) + cCor('Fim', 'cor2', el.cor2) + '</div>';
         h += cCor('Trilho', 'corTrilho', el.corTrilho);
         h += cRange('Opacidade do trilho', 'opTrilho', el.opTrilho, 0, 100, 1, '%');
-        h += cCheck('Brilho passando', 'brilho', el.brilho) + cCheck('Sombra', 'sombra', el.sombra);
-        h += cCheck('Usar duração da tela', 'usarGlobal', el.usarGlobal);
-        if (!el.usarGlobal) h += cNum('Duração própria (segundos)', 'durSeg', el.durSeg, 1, 99999);
+        h += ops(
+            cCheck('Brilho passando', 'brilho', el.brilho) +
+            cCheck('Sombra', 'sombra', el.sombra) +
+            cCheck('Usar duração da tela', 'usarGlobal', el.usarGlobal) +
+            (!el.usarGlobal ? cNum('Duração própria (segundos)', 'durSeg', el.durSeg, 1, 99999) : '')
+        );
     }
 
     if (el.tipo === 'contador') {
         h += cSel('Formato', 'formato', el.formato, [{v:'mm:ss',n:'59:00'},{v:'hh:mm:ss',n:'00:59:00'},{v:'ss',n:'3540 (só segundos)'}]);
-        h += cCheck('Regressivo (conta pra trás)', 'regressivo', el.regressivo);
-        h += cCheck('Usar duração da tela', 'usarGlobal', el.usarGlobal);
-        if (!el.usarGlobal) h += cNum('Duração própria (segundos)', 'durSeg', el.durSeg, 1, 99999);
         h += cSel('Fonte', 'fonte', el.fonte, opsFonte());
-        h += '<div class="linha2">' + cNum('Tamanho', 'tam', el.tam, 8, 200) +
-             cSel('Peso', 'peso', el.peso, [{v:300,n:'Fino'},{v:400,n:'Normal'},{v:600,n:'Semi'},{v:700,n:'Negrito'},{v:800,n:'Extra'},{v:900,n:'Black'}]) + '</div>';
-        h += cGrupo('Alinhamento', 'align', el.align, [{v:'left',n:'Esq'},{v:'center',n:'Centro'},{v:'right',n:'Dir'}]);
+        h += '<div class="linha2">' + cNum('Tamanho', 'tam', el.tam, 8, 200) + cSel('Peso', 'peso', el.peso, pesos) + '</div>';
+        h += cGrupo('Alinhamento', 'align', el.align, aligns);
         h += cCor('Cor', 'cor', el.cor);
         h += cNum('Espaço letras', 'ls', el.ls, -10, 20, .1);
-        h += cCheck('Dois pontos piscando', 'piscar', el.piscar) + cCheck('Sombra', 'sombra', el.sombra);
+        h += ops(
+            cCheck('Regressivo (conta pra trás)', 'regressivo', el.regressivo) +
+            cCheck('Dois pontos piscando', 'piscar', el.piscar) +
+            cCheck('Sombra', 'sombra', el.sombra) +
+            cGlow(el) +
+            cCheck('Usar duração da tela', 'usarGlobal', el.usarGlobal) +
+            (!el.usarGlobal ? cNum('Duração própria (segundos)', 'durSeg', el.durSeg, 1, 99999) : '')
+        );
     }
 
     if (el.tipo === 'loading') {
         h += cSel('Modelo', 'modelo', el.modelo, LOADINGS);
         h += '<div class="linha2">' + cCor('Cor 1', 'cor1', el.cor1) + cCor('Cor 2', 'cor2', el.cor2) + '</div>';
+        h += cRange('Finura da roda', 'espessura', el.espessura, 1, 24, .5, 'px');
         h += cRange('Velocidade (seg por volta)', 'veloc', el.veloc, .3, 4, .1, 's');
-        h += cNum('Espessura', 'espessura', el.espessura, 1, 30, .5);
         h += cCor('Trilho', 'corTrilho', el.corTrilho);
         h += cRange('Opacidade do trilho', 'opTrilho', el.opTrilho, 0, 100, 1, '%');
-        h += cCheck('Mostrar % no centro', 'mostrarPct', el.mostrarPct);
-        if (el.mostrarPct) {
-            h += '<div class="linha2">' + cNum('Tamanho %', 'tamPct', el.tamPct, 6, 90) + cCor('Cor %', 'corPct', el.corPct) + '</div>';
-            h += cCheck('Usar duração da tela', 'usarGlobal', el.usarGlobal !== false);
-            if (el.usarGlobal === false) h += cNum('Duração própria (segundos)', 'durSeg', el.durSeg || 60, 1, 99999);
-        }
+        h += ops(
+            cCheck('Mostrar % no centro', 'mostrarPct', el.mostrarPct) +
+            (el.mostrarPct ?
+                ('<div class="linha2">' + cNum('Tamanho %', 'tamPct', el.tamPct, 6, 90) + cCor('Cor %', 'corPct', el.corPct) + '</div>' +
+                 cCheck('Usar duração da tela', 'usarGlobal', el.usarGlobal !== false) +
+                 (el.usarGlobal === false ? cNum('Duração própria (segundos)', 'durSeg', el.durSeg || 60, 1, 99999) : '')) : '')
+        );
     }
 
     if (el.tipo === 'forma') {
         h += cGrupo('Formato', 'formato', el.formato, [{v:'retangulo',n:'Retângulo'},{v:'circulo',n:'Círculo'}]);
-        h += cCheck('Usar gradiente', 'gradiente', el.gradiente);
-        h += '<div class="linha2">' + cCor('Cor 1', 'cor1', el.cor1) +
-             (el.gradiente ? cCor('Cor 2', 'cor2', el.cor2) : '') + '</div>';
+        h += '<div class="linha2">' + cCor('Cor 1', 'cor1', el.cor1) + (el.gradiente ? cCor('Cor 2', 'cor2', el.cor2) : '') + '</div>';
         if (el.formato === 'retangulo') h += cNum('Cantos', 'radius', el.radius, 0, 300);
-        h += '<div class="linha2">' + cNum('Borda', 'borda', el.borda, 0, 30) + cCor('Cor borda', 'corBorda', el.corBorda) + '</div>';
-        h += cCheck('Sombra', 'sombra', el.sombra);
+        h += ops(
+            cCheck('Usar gradiente', 'gradiente', el.gradiente) +
+            cCheck('Sombra', 'sombra', el.sombra) +
+            cGlow(el) +
+            '<div class="linha2">' + cNum('Borda', 'borda', el.borda, 0, 30) + cCor('Cor borda', 'corBorda', el.corBorda) + '</div>'
+        );
     }
 
     if (el.tipo === 'facial') {
         h += '<div class="linha2">' + cCor('Cor 1', 'cor1', el.cor1) + cCor('Cor 2', 'cor2', el.cor2) + '</div>';
-        h += cNum('Espessura do anel', 'espessura', el.espessura, 1, 14, .2);
+        h += cRange('Espessura do anel', 'espessura', el.espessura, 1, 14, .2, 'px');
         h += cCor('Cor do trilho/cantos', 'corTrilho', el.corTrilho);
         h += cRange('Opacidade do trilho', 'opTrilho', el.opTrilho, 0, 100, 1, '%');
         h += cRange('Escurecer fora do círculo', 'escurecer', el.escurecer, 0, .85, .05, '');
-        h += cCheck('Linha de leitura (scanner)', 'scanner', el.scanner);
-        h += cCheck('Cantos', 'cantos', el.cantos);
-        h += cCheck('Usar duração da tela', 'usarGlobal', el.usarGlobal !== false);
-        if (el.usarGlobal === false) h += cNum('Duração própria (segundos)', 'durSeg', el.durSeg || 8, 1, 9999);
+        h += ops(
+            cCheck('Linha de leitura (scanner)', 'scanner', el.scanner) +
+            cCheck('Cantos', 'cantos', el.cantos) +
+            cCheck('Usar duração da tela', 'usarGlobal', el.usarGlobal !== false) +
+            (el.usarGlobal === false ? cNum('Duração própria (segundos)', 'durSeg', el.durSeg || 8, 1, 9999) : '')
+        );
     }
 
     if (el.tipo === 'selo') {
@@ -1585,31 +1653,38 @@ function renderProps() {
         h += cSel('Fonte', 'fonte', el.fonte, opsFonte());
         h += '<div class="linha2">' + cNum('Tamanho', 'tam', el.tam, 6, 40) + cNum('Espaço letras', 'ls', el.ls, 0, 10, .1) + '</div>';
         h += '<div class="linha2">' + cCor('Texto', 'cor', el.cor) + cCor('Ponto', 'corPonto', el.corPonto) + '</div>';
-        h += cCor('Borda', 'corBorda', el.corBorda);
-        h += cRange('Opacidade da borda', 'opBorda', el.opBorda, 0, 100, 1, '%');
-        h += cCheck('MAIÚSCULAS', 'maiusc', el.maiusc);
+        h += ops(
+            cCheck('MAIÚSCULAS', 'maiusc', el.maiusc) +
+            cGlow(el) +
+            cCor('Cor da borda', 'corBorda', el.corBorda) +
+            cRange('Opacidade da borda', 'opBorda', el.opBorda, 0, 100, 1, '%')
+        );
     }
 
     if (el.tipo === 'digital') {
-        h += cCheck('Usar cores originais da imagem', 'usarOriginal', el.usarOriginal);
         if (!el.usarOriginal) {
-            h += cCheck('Gradiente nas cores', 'gradiente', el.gradiente);
             h += '<div class="linha2">' + cCor(el.gradiente ? 'Cor de cima' : 'Cor', 'cor1', el.cor1) +
                  (el.gradiente ? cCor('Cor de baixo', 'cor2', el.cor2) : '') + '</div>';
         }
-        h += cCheck('Pulsar (chamar pra tocar)', 'pulsar', el.pulsar);
-        h += cCheck('Piscar', 'piscar', el.piscar);
+        h += ops(
+            cCheck('Usar cores originais da imagem', 'usarOriginal', el.usarOriginal) +
+            (!el.usarOriginal ? cCheck('Gradiente nas cores', 'gradiente', el.gradiente) : '') +
+            cCheck('Pulsar (chamar pra tocar)', 'pulsar', el.pulsar) +
+            cCheck('Piscar', 'piscar', el.piscar)
+        );
     }
 
     if (el.tipo === 'android') {
         h += '<div class="linha2">' + cCor('Cor do boneco', 'cor', el.cor) + cCor('Olhos', 'corOlhos', el.corOlhos) + '</div>';
-        h += cCheck('Mostrar seta de atualização', 'refresh', el.refresh);
         if (el.refresh) {
             h += cCor('Cor da seta', 'corRefresh', el.corRefresh);
             h += cRange('Tamanho da seta', 'tamRefresh', (el.tamRefresh == null ? 34 : el.tamRefresh), 10, 80, 1, '%');
-            h += cCheck('Seta girando', 'girarRefresh', el.girarRefresh);
             if (el.girarRefresh) h += cRange('Velocidade (seg por volta)', 'veloc', el.veloc, .4, 4, .1, 's');
         }
+        h += ops(
+            cCheck('Mostrar seta de atualização', 'refresh', el.refresh) +
+            (el.refresh ? cCheck('Seta girando', 'girarRefresh', el.girarRefresh) : '')
+        );
     }
 
     h += '<hr style="border:0;border-top:1px solid var(--linha);margin:12px 0">';
@@ -1629,7 +1704,7 @@ function mudarProp(k, v, commit) {
     if (el.tipo === 'loading' || el.tipo === 'facial') el.h = el.w;
     renderPalco();
     renderCamadas();
-    if (k === 'usarGlobal' || k === 'mostrarPct' || k === 'gradiente' || k === 'formato' || k === 'modelo' || k === 'preencher' || k === 'usarOriginal' || k === 'refresh' || k === 'girarRefresh') renderProps();
+    if (k === 'usarGlobal' || k === 'mostrarPct' || k === 'gradiente' || k === 'formato' || k === 'modelo' || k === 'preencher' || k === 'usarOriginal' || k === 'refresh' || k === 'girarRefresh' || k === 'temBorda' || k === 'glow') renderProps();
 }
 
 $('props').addEventListener('input', function (e) {
@@ -1666,9 +1741,16 @@ $('props').addEventListener('click', function (e) {
     if (!acao || !el) return;
     salvarHist();
     var i = S.els.indexOf(el);
-    if (acao === 'centroH') el.x = Math.round((S.disp.w - el.w) / 2);
+    if (acao === 'centroH' || acao === 'alCentroH') el.x = Math.round((S.disp.w - el.w) / 2);
+    if (acao === 'alEsq')     el.x = 0;
+    if (acao === 'alDir')     el.x = S.disp.w - el.w;
+    if (acao === 'alTopo')    el.y = 0;
+    if (acao === 'alCentroV') el.y = Math.round((S.disp.h - el.h) / 2);
+    if (acao === 'alBase')    el.y = S.disp.h - el.h;
     if (acao === 'frente' && i < S.els.length - 1) { S.els.splice(i, 1); S.els.splice(i + 1, 0, el); }
     if (acao === 'tras' && i > 0) { S.els.splice(i, 1); S.els.splice(i - 1, 0, el); }
+    if (acao === 'frenteTudo') { S.els.splice(i, 1); S.els.push(el); }
+    if (acao === 'fundoTudo') { S.els.splice(i, 1); S.els.unshift(el); }
     if (acao === 'duplicar') {
         var c = clone(el); c.id = uid(); c.x += 12; c.y += 12; c.nome = el.nome + ' cópia';
         S.els.push(c); S.sel = c.id;
