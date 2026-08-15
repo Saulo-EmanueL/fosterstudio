@@ -479,8 +479,6 @@ input[type=color] {
         <div class="espaco"></div>
 
         <button class="btn" id="btModelos">Modelos</button>
-        <button class="btn" id="btAbrir">Abrir</button>
-        <button class="btn" id="btSalvar">Salvar arquivo</button>
         <button class="btn" id="btNuvem">☁ Salvar na nuvem</button>
         <button class="btn pri" id="btExportar">Exportar HTML</button>
         <button class="btn mini" id="btSair" title="Sair" style="margin-left:4px">Sair</button>
@@ -606,7 +604,6 @@ input[type=color] {
 </div>
 
 <div class="toast" id="toast"></div>
-<input type="file" id="inputArquivo" accept=".json" style="display:none">
 <input type="file" id="inputImagem" accept="image/*" style="display:none">
 <input type="file" id="inputImgBib" accept="image/*" style="display:none">
 
@@ -2031,27 +2028,6 @@ function autoCarregar() {
     } catch (e) { return false; }
 }
 
-$('btSalvar').addEventListener('click', function () {
-    baixar('tela-' + new Date().getTime() + '.json', projetoJSON(), 'application/json');
-    toast('Projeto salvo', 'ok');
-});
-$('btAbrir').addEventListener('click', function () { $('inputArquivo').click(); });
-$('inputArquivo').addEventListener('change', function (e) {
-    var f = e.target.files[0]; if (!f) return;
-    var r = new FileReader();
-    r.onload = function () {
-        try {
-            var o = JSON.parse(r.result);
-            if (!o.els) throw 0;
-            salvarHist();
-            S.disp = o.disp || S.disp; S.fundo = o.fundo || S.fundo;
-            S.duracaoMin = o.duracaoMin || 59; S.els = o.els; S.sel = null;
-            tudo(); toast('Projeto aberto', 'ok');
-        } catch (err) { toast('Arquivo inválido', 'erro'); }
-    };
-    r.readAsText(f);
-    e.target.value = '';
-});
 /* comprime qualquer foto e devolve o dataURL pronto */
 function comprimirImagem(f, cb) {
     if (!f) return;
