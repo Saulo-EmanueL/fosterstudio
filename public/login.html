@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entrar — Studio de Telas</title>
+<style>
+:root { --azul:#3E9BFF; --azul-esc:#1B4EF5; --bg:#0d0f14; --painel:#14171f; --linha:#262b38; --txt:#e7eaf2; --txt2:#8b94a8; --vermelho:#FF5470; }
+* { box-sizing: border-box; }
+html, body { margin:0; height:100%; background:var(--bg); color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; }
+body {
+    display:flex; align-items:center; justify-content:center; padding:24px;
+    background:radial-gradient(circle at 50% 30%, #171b26 0%, #0d0f14 70%);
+}
+.aurora { position:fixed; inset:-20%; pointer-events:none;
+    background:radial-gradient(40% 32% at 50% 34%, rgba(45,110,255,.20), transparent 70%); }
+.caixa {
+    position:relative; width:100%; max-width:360px;
+    background:var(--painel); border:1px solid var(--linha);
+    border-radius:16px; padding:30px 26px 26px;
+    box-shadow:0 24px 60px rgba(0,0,0,.6);
+}
+.logo { display:flex; align-items:center; gap:9px; font-weight:800; font-size:16px; margin-bottom:4px; }
+.logo i { width:20px; height:20px; border-radius:7px; background:linear-gradient(135deg,var(--azul-esc),var(--azul)); display:inline-block; }
+.sub { color:var(--txt2); font-size:12.5px; margin:0 0 22px; }
+label { display:block; font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--txt2); margin:0 0 6px; }
+input {
+    width:100%; background:var(--bg); border:1px solid var(--linha); border-radius:9px;
+    padding:11px 12px; color:var(--txt); font-size:14px; outline:none; margin-bottom:15px;
+}
+input:focus { border-color:var(--azul); }
+button {
+    width:100%; padding:12px; border:0; border-radius:9px; cursor:pointer;
+    background:linear-gradient(135deg,var(--azul-esc),var(--azul)); color:#fff;
+    font-size:14px; font-weight:700; font-family:inherit;
+}
+button:hover { filter:brightness(1.1); }
+button:disabled { opacity:.6; cursor:default; }
+.erro { color:var(--vermelho); font-size:12.5px; min-height:18px; margin-top:2px; text-align:center; }
+</style>
+</head>
+<body>
+<div class="aurora"></div>
+<form class="caixa" id="form">
+    <div class="logo"><i></i> Studio de Telas</div>
+    <p class="sub">Acesso restrito à equipe.</p>
+
+    <label>Usuário</label>
+    <input type="text" id="usuario" autocomplete="username" autofocus>
+
+    <label>Senha</label>
+    <input type="password" id="senha" autocomplete="current-password">
+
+    <button type="submit" id="bt">Entrar</button>
+    <div class="erro" id="erro"></div>
+</form>
+
+<script>
+var form = document.getElementById('form');
+var bt = document.getElementById('bt');
+var erro = document.getElementById('erro');
+
+form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    erro.textContent = '';
+    bt.disabled = true; bt.textContent = 'Entrando...';
+
+    fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            usuario: document.getElementById('usuario').value,
+            senha: document.getElementById('senha').value
+        })
+    }).then(function (r) {
+        if (r.ok) { window.location.href = '/'; return; }
+        return r.json().then(function (j) {
+            bt.disabled = false; bt.textContent = 'Entrar';
+            erro.textContent = j.erro === 'muitas_tentativas'
+                ? 'Muitas tentativas. Espere 5 minutos.'
+                : 'Usuário ou senha incorretos.';
+        });
+    }).catch(function () {
+        bt.disabled = false; bt.textContent = 'Entrar';
+        erro.textContent = 'Erro de conexão. Tente de novo.';
+    });
+});
+</script>
+</body>
+</html>
