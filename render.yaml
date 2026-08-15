@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: studio-telas
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ADMIN_USER
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false     # defina no painel do Render (não deixe no repositório)
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: MONGODB_URI
+        sync: false     # cole a string de conexão do MongoDB Atlas no painel
+      - key: DB_NAME
+        value: studio_telas
